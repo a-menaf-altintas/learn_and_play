@@ -1,84 +1,83 @@
 import 'package:flutter/material.dart';
-import 'package:learn_and_play/screens/number_selection_screen.dart';
-import 'package:learn_and_play/screens/number_tracing_screen.dart';
-import 'package:learn_and_play/screens/arithmetic_selection_screen.dart';
-import 'package:learn_and_play/screens/shape_selection_screen.dart';
+import 'package:learn_and_play/screens/arithmetic_practice_screen.dart';
 
-class MathScreen extends StatelessWidget {
-  const MathScreen({Key? key}) : super(key: key);
+class ArithmeticSelectionScreen extends StatelessWidget {
+  const ArithmeticSelectionScreen({Key? key}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Math Module'),
+        title: const Text('Arithmetic'),
       ),
       body: Center(
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(16),
           child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
             children: [
               const Text(
-                'Welcome to the Math Module!',
+                'Choose an Operation',
                 style: TextStyle(fontSize: 20),
               ),
-              const SizedBox(height: 30),
-
-              // 1) Free Draw
-              ElevatedButton(
-                onPressed: () {
-                  // Go to number_tracing_screen in "free draw" mode => number=''
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => const NumberTracingScreen(number: ''),
-                    ),
-                  );
-                },
-                child: const Text('Free Draw'),
-              ),
               const SizedBox(height: 20),
 
-              // 2) Draw Numbers
               ElevatedButton(
                 onPressed: () {
                   Navigator.push(
                     context,
                     MaterialPageRoute(
-                      builder: (context) => const NumberSelectionScreen(),
+                      builder: (context) => const ArithmeticPracticeScreen(
+                        operation: 'Addition',
+                      ),
                     ),
                   );
                 },
-                child: const Text('Draw Numbers'),
+                child: const Text('Addition'),
               ),
-              const SizedBox(height: 20),
+              const SizedBox(height: 10),
 
-              // 3) Arithmetic (Add/Sub/Mul/Div)
               ElevatedButton(
                 onPressed: () {
                   Navigator.push(
                     context,
                     MaterialPageRoute(
-                      builder: (context) => const ArithmeticSelectionScreen(),
+                      builder: (context) => const ArithmeticPracticeScreen(
+                        operation: 'Subtraction',
+                      ),
                     ),
                   );
                 },
-                child: const Text('Arithmetic'),
+                child: const Text('Subtraction'),
               ),
-              const SizedBox(height: 20),
+              const SizedBox(height: 10),
 
-              // 4) Shapes
               ElevatedButton(
                 onPressed: () {
                   Navigator.push(
                     context,
                     MaterialPageRoute(
-                      builder: (context) => const ShapeSelectionScreen(),
+                      builder: (context) => const ArithmeticPracticeScreen(
+                        operation: 'Multiplication',
+                      ),
                     ),
                   );
                 },
-                child: const Text('Shapes'),
+                child: const Text('Multiplication'),
+              ),
+              const SizedBox(height: 10),
+
+              ElevatedButton(
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const ArithmeticPracticeScreen(
+                        operation: 'Division',
+                      ),
+                    ),
+                  );
+                },
+                child: const Text('Division'),
               ),
             ],
           ),
