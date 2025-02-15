@@ -35,10 +35,13 @@ class _TracingScreenState extends State<TracingScreen> {
   /// Current color mode for *new* strokes
   DrawingColorMode _selectedColorMode = DrawingColorMode.pink;
 
-  /// Hover flags for each icon
+  /// Hover flags for each icon (so we can scale them up on hover)
   bool _isHoveringPink = false;
   bool _isHoveringRainbow = false;
   bool _isHoveringPurple = false;
+
+  /// Track cursor position so we can draw a "pen" icon under the pointer.
+  Offset? _cursorPosition;
 
   @override
   Widget build(BuildContext context) {
@@ -61,16 +64,54 @@ class _TracingScreenState extends State<TracingScreen> {
         children: [
           // The drawing area
           Expanded(
-            child: Listener(
-              behavior: HitTestBehavior.opaque,
-              onPointerDown: (event) => _startStroke(event.localPosition),
-              onPointerMove: (event) => _updateStroke(event.localPosition),
-              onPointerUp: (event) => _endStroke(),
-              child: CustomPaint(
-                painter: _TracingPainter(_strokes, _activeStroke),
-                child: Container(
-                  width: double.infinity,
-                  height: double.infinity,
+            child: MouseRegion(
+              // Hide the system mouse cursor so we can show our own "pen"
+              cursor: SystemMouseCursors.none,
+              // Update cursor position when hovering (desktop/web)
+              onHover: (event) {
+                setState(() {
+                  _cursorPosition = event.localPosition;
+                });
+              },
+              child: Listener(
+                behavior: HitTestBehavior.opaque,
+                // Also update cursor position on pointer down and move
+                onPointerDown: (event) {
+                  setState(() {
+                    _cursorPosition = event.localPosition;
+                  });
+                  _startStroke(event.localPosition);
+                },
+                onPointerMove: (event) {
+                  setState(() {
+                    _cursorPosition = event.localPosition;
+                  });
+                  _updateStroke(event.localPosition);
+                },
+                onPointerUp: (event) {
+                  _endStroke();
+                },
+                child: Stack(
+                  children: [
+                    // 1) CustomPaint for strokes
+                    Positioned.fill(
+                      child: CustomPaint(
+                        painter: _TracingPainter(_strokes, _activeStroke),
+                        child: Container(), // Placeholder to fill area
+                      ),
+                    ),
+                    // 2) Our custom pen cursor
+                    if (_cursorPosition != null)
+                      Positioned(
+                        left: _cursorPosition!.dx,
+                        top: _cursorPosition!.dy,
+                        // Shift it left/up a bit so the pen tip is under pointer
+                        child: Transform.translate(
+                          offset: const Offset(-8, -24),
+                          child: _buildCustomPenIcon(),
+                        ),
+                      ),
+                  ],
                 ),
               ),
             ),
@@ -82,7 +123,9 @@ class _TracingScreenState extends State<TracingScreen> {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
+                // ---------------------
                 // PINK ICON
+                // ---------------------
                 MouseRegion(
                   onEnter: (_) {
                     setState(() {
@@ -112,7 +155,9 @@ class _TracingScreenState extends State<TracingScreen> {
                 ),
                 const SizedBox(width: 16),
 
+                // ---------------------
                 // RAINBOW ICON
+                // ---------------------
                 MouseRegion(
                   onEnter: (_) {
                     setState(() {
@@ -144,7 +189,9 @@ class _TracingScreenState extends State<TracingScreen> {
                 ),
                 const SizedBox(width: 16),
 
+                // ---------------------
                 // PURPLE ICON
+                // ---------------------
                 MouseRegion(
                   onEnter: (_) {
                     setState(() {
@@ -178,6 +225,54 @@ class _TracingScreenState extends State<TracingScreen> {
         ],
       ),
     );
+  }
+
+  // Builds a pen icon in the chosen color (pink/purple) or a
+  // rainbow gradient pen for the rainbow mode.
+  Widget _buildCustomPenIcon() {
+    const double iconSize = 24;
+
+    switch (_selectedColorMode) {
+      case DrawingColorMode.pink:
+        return Icon(
+          Icons.create, // "pen" icon
+          color: Colors.pink,
+          size: iconSize,
+        );
+
+      case DrawingColorMode.purple:
+        return Icon(
+          Icons.create,
+          color: Colors.purple,
+          size: iconSize,
+        );
+
+      case DrawingColorMode.rainbow:
+        // We'll color the pen shape with a rainbow gradient
+        return ShaderMask(
+          blendMode: BlendMode.srcIn,
+          shaderCallback: (Rect bounds) {
+            // Set up a rainbow gradient
+            return const SweepGradient(
+              colors: [
+                Colors.red,
+                Colors.orange,
+                Colors.yellow,
+                Colors.green,
+                Colors.blue,
+                Colors.indigo,
+                Colors.purple,
+                Colors.red, // close the loop
+              ],
+            ).createShader(bounds);
+          },
+          child: const Icon(
+            Icons.create,
+            color: Colors.white, // We'll mask out with the gradient
+            size: iconSize,
+          ),
+        );
+    }
   }
 
   /// Called when the user first touches the screen
@@ -287,7 +382,6 @@ class RainbowIconButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Use InkWell or GestureDetector here
     return GestureDetector(
       onTap: onTap,
       child: CustomPaint(
@@ -313,17 +407,16 @@ class _RainbowCirclePainter extends CustomPainter {
         Colors.blue,
         Colors.indigo,
         Colors.purple,
-        Colors.red, // loop back to red at the end
+        Colors.red, // loop back to red
       ],
       startAngle: 0.0,
-      endAngle: 2 * 3.141592653589793, // 2*pi
+      endAngle: 2 * 3.141592653589793,
       tileMode: TileMode.clamp,
     );
 
     final paint = Paint()..shader = gradient.createShader(rect);
     final center = size.center(Offset.zero);
     final radius = size.width / 2;
-
     canvas.drawCircle(center, radius, paint);
   }
 
