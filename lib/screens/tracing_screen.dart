@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+/// Drawing modes for our pen/eraser
 enum DrawingColorMode {
   pink,
   rainbow,
@@ -7,6 +8,7 @@ enum DrawingColorMode {
   eraser,
 }
 
+/// A single stroke of drawing
 class Stroke {
   final List<Offset> points;
   final DrawingColorMode colorMode;
@@ -17,56 +19,63 @@ class Stroke {
   });
 }
 
+/// The TracingScreen can do two things:
+/// - letter == '' => free draw (no background letter)
+/// - letter != '' => show a faint letter for tracing
 class TracingScreen extends StatefulWidget {
-  const TracingScreen({Key? key}) : super(key: key);
+  final String letter;
+
+  const TracingScreen({
+    Key? key,
+    required this.letter,
+  }) : super(key: key);
 
   @override
   State<TracingScreen> createState() => _TracingScreenState();
 }
 
 class _TracingScreenState extends State<TracingScreen> {
-  /// The main list of completed strokes
+  /// List of completed strokes
   final List<Stroke> _strokes = [];
 
-  /// A stack of “undone” strokes for Redo
+  /// Undone strokes (for Redo)
   final List<Stroke> _redoStrokes = [];
 
   /// The stroke currently being drawn
   Stroke? _activeStroke;
 
-  /// Currently selected drawing mode (pen/eraser)
+  /// Currently selected drawing mode
   DrawingColorMode _selectedColorMode = DrawingColorMode.pink;
 
-  /// Hover flags for each icon
+  /// Hover flags for color icons (for web/desktop)
   bool _isHoveringPink = false;
   bool _isHoveringRainbow = false;
   bool _isHoveringPurple = false;
   bool _isHoveringEraser = false;
 
-  /// Track cursor position to show a custom icon under the pointer
+  /// Track cursor position for our custom pen/eraser icon
   Offset? _cursorPosition;
 
   @override
   Widget build(BuildContext context) {
+    // If letter is empty => "Free Draw"; else => "Trace the Letter X"
+    final titleText = widget.letter.isEmpty
+        ? 'Free Draw'
+        : 'Trace the Letter ${widget.letter}';
+
     return Scaffold(
-      // Use a background color at the Scaffold level
       backgroundColor: Colors.white,
       appBar: AppBar(
-        title: const Text('Tracing Screen'),
+        title: Text(titleText),
         actions: [
-          // UNDO button
           IconButton(
             icon: const Icon(Icons.undo),
             onPressed: _undo,
           ),
-
-          // REDO button
           IconButton(
             icon: const Icon(Icons.redo),
             onPressed: _redo,
           ),
-
-          // CLEAR button
           IconButton(
             icon: const Icon(Icons.clear),
             onPressed: _clearAll,
@@ -102,7 +111,23 @@ class _TracingScreenState extends State<TracingScreen> {
                 },
                 child: Stack(
                   children: [
-                    // CustomPaint for strokes
+                    // 1) Faint letter if we have a letter
+                    if (widget.letter.isNotEmpty)
+                      Center(
+                        child: Opacity(
+                          opacity: 0.15,
+                          child: Text(
+                            widget.letter,
+                            style: const TextStyle(
+                              fontSize: 300,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.black,
+                            ),
+                          ),
+                        ),
+                      ),
+
+                    // 2) CustomPaint for strokes (draw or erase)
                     Positioned.fill(
                       child: CustomPaint(
                         painter: _TracingPainter(_strokes, _activeStroke),
@@ -110,7 +135,7 @@ class _TracingScreenState extends State<TracingScreen> {
                       ),
                     ),
 
-                    // Custom pen/eraser icon under the pointer
+                    // 3) Our custom pen/eraser icon
                     if (_cursorPosition != null)
                       Positioned(
                         left: _cursorPosition!.dx,
@@ -126,7 +151,7 @@ class _TracingScreenState extends State<TracingScreen> {
             ),
           ),
 
-          // The toolbar for color/eraser selection
+          // Bottom toolbar for color / eraser
           Padding(
             padding: const EdgeInsets.symmetric(vertical: 8),
             child: Row(
@@ -228,8 +253,7 @@ class _TracingScreenState extends State<TracingScreen> {
     );
   }
 
-  // ---------- Undo, Redo, and Clear ----------
-
+  // --- Undo / Redo / Clear ---
   void _undo() {
     if (_strokes.isNotEmpty) {
       setState(() {
@@ -254,13 +278,12 @@ class _TracingScreenState extends State<TracingScreen> {
     });
   }
 
-  // ---------- Stroke Lifecycle ----------
-
+  // --- Stroke Lifecycle ---
   void _startStroke(Offset position) {
-    setState(() {
-      // If the user starts drawing after an Undo, we can't redo older strokes
-      _redoStrokes.clear();
+    // If user starts drawing after an Undo, remove redo stack
+    _redoStrokes.clear();
 
+    setState(() {
       _activeStroke = Stroke(
         points: [position],
         colorMode: _selectedColorMode,
@@ -278,15 +301,13 @@ class _TracingScreenState extends State<TracingScreen> {
   void _endStroke() {
     if (_activeStroke != null) {
       setState(() {
-        // Once the user finishes drawing, add the stroke to the list
         _strokes.add(_activeStroke!);
         _activeStroke = null;
       });
     }
   }
 
-  // ---------- Custom Pen / Eraser Cursor Icon ----------
-
+  // --- Build Pen / Eraser Icon ---
   Widget _buildCustomPenIcon() {
     const double iconSize = 24;
 
@@ -307,7 +328,7 @@ class _TracingScreenState extends State<TracingScreen> {
                 Colors.blue,
                 Colors.indigo,
                 Colors.purple,
-                Colors.red,
+                Colors.red, // loop
               ],
             ).createShader(bounds);
           },
@@ -323,8 +344,7 @@ class _TracingScreenState extends State<TracingScreen> {
   }
 }
 
-// ---------- CustomPainter Implementation for True Eraser ----------
-
+/// CustomPainter that supports real erasing (BlendMode.clear)
 class _TracingPainter extends CustomPainter {
   final List<Stroke> strokes;
   final Stroke? activeStroke;
@@ -333,12 +353,15 @@ class _TracingPainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
-    // We paint onto an offscreen layer so BlendMode.clear can erase.
+    // Offscreen layer so eraser can remove paint
     canvas.saveLayer(Offset.zero & size, Paint());
 
+    // Paint completed strokes
     for (final stroke in strokes) {
       _drawStroke(canvas, stroke);
     }
+
+    // Paint stroke in progress
     if (activeStroke != null) {
       _drawStroke(canvas, activeStroke!);
     }
@@ -356,19 +379,18 @@ class _TracingPainter extends CustomPainter {
       if ((p2 - p1).distance > 50) continue;
 
       final linePaint = Paint()
-        ..strokeWidth = 5
+        // We make the eraser bigger for a stronger erase
+        ..strokeWidth = (stroke.colorMode == DrawingColorMode.eraser) ? 30 : 5
         ..strokeCap = StrokeCap.round
         ..style = PaintingStyle.stroke;
 
-      // Eraser uses BlendMode.clear to remove existing paint
       if (stroke.colorMode == DrawingColorMode.eraser) {
+        // Eraser "punches holes" in the paint
         linePaint.blendMode = BlendMode.clear;
       } else {
-        // Normal stroke
         linePaint.blendMode = BlendMode.srcOver;
       }
 
-      // Set color if needed
       switch (stroke.colorMode) {
         case DrawingColorMode.pink:
           linePaint.color = Colors.pink;
@@ -390,7 +412,7 @@ class _TracingPainter extends CustomPainter {
           linePaint.color = Colors.purple;
           break;
         case DrawingColorMode.eraser:
-          // No color needed, since blendMode.clear is used
+          // Clear blend mode, no color needed
           break;
       }
 
@@ -402,8 +424,7 @@ class _TracingPainter extends CustomPainter {
   bool shouldRepaint(_TracingPainter oldDelegate) => true;
 }
 
-// ---------- Optional: Rainbow Circle for the Rainbow Button ----------
-
+/// Optional: Painted rainbow icon for the "rainbow" button
 class RainbowIconButton extends StatelessWidget {
   final double size;
   final VoidCallback onTap;
@@ -444,7 +465,6 @@ class _RainbowCirclePainter extends CustomPainter {
       startAngle: 0.0,
       endAngle: 2 * 3.141592653589793,
     );
-
     final paint = Paint()..shader = gradient.createShader(rect);
     final center = size.center(Offset.zero);
     final radius = size.width / 2;
