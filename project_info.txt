@@ -1,0 +1,260 @@
+
+--- FILE: /Users/aaltintas/development/learn_and_play/test/widget_test.dart ---
+// This is a basic Flutter widget test.
+//
+// To perform an interaction with a widget in your test, use the WidgetTester
+// utility in the flutter_test package. For example, you can send tap and scroll
+// gestures. You can also use WidgetTester to find child widgets in the widget
+// tree, read text, and verify that the values of widget properties are correct.
+
+import 'package:flutter/material.dart';
+import 'package:flutter_test/flutter_test.dart';
+
+import 'package:learn_and_play/main.dart';
+
+void main() {
+  testWidgets('Counter increments smoke test', (WidgetTester tester) async {
+    // Build our app and trigger a frame.
+    await tester.pumpWidget(const MyApp());
+
+    // Verify that our counter starts at 0.
+    expect(find.text('0'), findsOneWidget);
+    expect(find.text('1'), findsNothing);
+
+    // Tap the '+' icon and trigger a frame.
+    await tester.tap(find.byIcon(Icons.add));
+    await tester.pump();
+
+    // Verify that our counter has incremented.
+    expect(find.text('0'), findsNothing);
+    expect(find.text('1'), findsOneWidget);
+  });
+}
+
+--- END OF FILE ---
+
+--- FILE: /Users/aaltintas/development/learn_and_play/lib/main.dart ---
+import 'package:flutter/material.dart';
+import 'screens/home_screen.dart';
+import 'screens/literacy_screen.dart';
+import 'screens/math_screen.dart';
+
+void main() {
+  runApp(const MyApp());
+}
+
+class MyApp extends StatelessWidget {
+  const MyApp({Key? key}) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      title: 'Learn & Play',
+      theme: ThemeData(
+        primarySwatch: Colors.blue,
+      ),
+      home: const HomeScreen(),
+      routes: {
+        '/literacy': (context) => const LiteracyScreen(),
+        '/math': (context) => const MathScreen(),
+      },
+    );
+  }
+}
+
+--- END OF FILE ---
+
+--- FILE: /Users/aaltintas/development/learn_and_play/lib/screens/math_screen.dart ---
+import 'package:flutter/material.dart';
+
+class MathScreen extends StatelessWidget {
+  const MathScreen({Key? key}) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Math Module'),
+      ),
+      body: const Center(
+        child: Text('Welcome to the Math Module!'),
+      ),
+    );
+  }
+}
+
+--- END OF FILE ---
+
+--- FILE: /Users/aaltintas/development/learn_and_play/lib/screens/tracing_screen.dart ---
+import 'package:flutter/material.dart';
+
+class TracingScreen extends StatefulWidget {
+  const TracingScreen({Key? key}) : super(key: key);
+
+  @override
+  State<TracingScreen> createState() => _TracingScreenState();
+}
+
+class _TracingScreenState extends State<TracingScreen> {
+  final List<Offset> _points = [];
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Tracing Screen'),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.clear),
+            onPressed: () {
+              setState(() {
+                _points.clear();
+              });
+            },
+          ),
+        ],
+      ),
+      body: Listener(
+        behavior: HitTestBehavior.opaque,
+        onPointerDown: (event) {
+          setState(() {
+            _points.add(event.localPosition);
+          });
+        },
+        onPointerMove: (event) {
+          setState(() {
+            _points.add(event.localPosition);
+          });
+        },
+        onPointerUp: (event) {
+          // Do nothing on pointer up
+        },
+        child: CustomPaint(
+          painter: _TracingPainter(_points),
+          child: Container(
+            width: double.infinity,
+            height: double.infinity,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _TracingPainter extends CustomPainter {
+  final List<Offset> points;
+  _TracingPainter(this.points);
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    // No background color is drawn here, 
+    // so the default background (from the Scaffold or parent widget) is visible.
+
+    // Draw lines connecting each pointer location (like a pen stroke).
+    final linePaint = Paint()
+      ..color = Colors.blueAccent
+      ..strokeWidth = 5
+      ..strokeCap = StrokeCap.round
+      ..style = PaintingStyle.stroke;
+
+    for (int i = 0; i < points.length - 1; i++) {
+      final p1 = points[i];
+      final p2 = points[i + 1];
+      if ((p2 - p1).distance < 50) {
+        canvas.drawLine(p1, p2, linePaint);
+      }
+    }
+  }
+
+  @override
+  bool shouldRepaint(_TracingPainter oldDelegate) => true;
+}
+
+--- END OF FILE ---
+
+--- FILE: /Users/aaltintas/development/learn_and_play/lib/screens/literacy_screen.dart ---
+import 'package:flutter/material.dart';
+import 'package:learn_and_play/screens/tracing_screen.dart';
+
+class LiteracyScreen extends StatelessWidget {
+  const LiteracyScreen({Key? key}) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Literacy Module'),
+      ),
+      body: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Text('Welcome to the Literacy Module!'),
+            const SizedBox(height: 20),
+            ElevatedButton(
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => const TracingScreen()),
+                );
+              },
+              child: const Text('Go to Tracing Screen'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+--- END OF FILE ---
+
+--- FILE: /Users/aaltintas/development/learn_and_play/lib/screens/home_screen.dart ---
+import 'package:flutter/material.dart';
+
+class HomeScreen extends StatelessWidget {
+  const HomeScreen({Key? key}) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Learn & Play'),
+      ),
+      body: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            ElevatedButton(
+              onPressed: () {
+                Navigator.pushNamed(context, '/literacy');
+              },
+              child: const Text('Literacy Module'),
+            ),
+            const SizedBox(height: 20),
+            ElevatedButton(
+              onPressed: () {
+                Navigator.pushNamed(context, '/math');
+              },
+              child: const Text('Math Module'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+--- END OF FILE ---
+
+--- FILE: /Users/aaltintas/development/learn_and_play/.dart_tool/dartpad/web_plugin_registrant.dart ---
+// Flutter web plugin registrant file.
+//
+// Generated file. Do not edit.
+//
+
+// ignore_for_file: type=lint
+
+void registerPlugins() {}
+
+--- END OF FILE ---
