@@ -35,6 +35,11 @@ class _TracingScreenState extends State<TracingScreen> {
   /// Current color mode for *new* strokes
   DrawingColorMode _selectedColorMode = DrawingColorMode.pink;
 
+  /// Hover flags for each icon
+  bool _isHoveringPink = false;
+  bool _isHoveringRainbow = false;
+  bool _isHoveringPurple = false;
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -77,36 +82,95 @@ class _TracingScreenState extends State<TracingScreen> {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                // Pink circle button
-                IconButton(
-                  icon: const Icon(Icons.circle, color: Colors.pink),
-                  onPressed: () {
+                // PINK ICON
+                MouseRegion(
+                  onEnter: (_) {
                     setState(() {
-                      _selectedColorMode = DrawingColorMode.pink;
+                      _isHoveringPink = true;
                     });
                   },
+                  onExit: (_) {
+                    setState(() {
+                      _isHoveringPink = false;
+                    });
+                  },
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 200),
+                    transform: _isHoveringPink
+                        ? (Matrix4.identity()..scale(1.3))
+                        : Matrix4.identity(),
+                    child: IconButton(
+                      icon: const Icon(Icons.circle, color: Colors.pink),
+                      iconSize: 32,
+                      onPressed: () {
+                        setState(() {
+                          _selectedColorMode = DrawingColorMode.pink;
+                        });
+                      },
+                    ),
+                  ),
                 ),
                 const SizedBox(width: 16),
 
-                // Rainbow circle button (drawn with a custom painter)
-                RainbowIconButton(
-                  size: 36,
-                  onTap: () {
+                // RAINBOW ICON
+                MouseRegion(
+                  onEnter: (_) {
                     setState(() {
-                      _selectedColorMode = DrawingColorMode.rainbow;
+                      _isHoveringRainbow = true;
                     });
                   },
+                  onExit: (_) {
+                    setState(() {
+                      _isHoveringRainbow = false;
+                    });
+                  },
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 200),
+                    transform: _isHoveringRainbow
+                        ? (Matrix4.identity()..scale(1.3))
+                        : Matrix4.identity(),
+                    child: GestureDetector(
+                      onTap: () {
+                        setState(() {
+                          _selectedColorMode = DrawingColorMode.rainbow;
+                        });
+                      },
+                      child: CustomPaint(
+                        size: const Size.square(36),
+                        painter: _RainbowCirclePainter(),
+                      ),
+                    ),
+                  ),
                 ),
                 const SizedBox(width: 16),
 
-                // Purple circle button
-                IconButton(
-                  icon: Icon(Icons.circle, color: Colors.purple[700]),
-                  onPressed: () {
+                // PURPLE ICON
+                MouseRegion(
+                  onEnter: (_) {
                     setState(() {
-                      _selectedColorMode = DrawingColorMode.purple;
+                      _isHoveringPurple = true;
                     });
                   },
+                  onExit: (_) {
+                    setState(() {
+                      _isHoveringPurple = false;
+                    });
+                  },
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 200),
+                    transform: _isHoveringPurple
+                        ? (Matrix4.identity()..scale(1.3))
+                        : Matrix4.identity(),
+                    child: IconButton(
+                      icon: Icon(Icons.circle, color: Colors.purple[700]),
+                      iconSize: 32,
+                      onPressed: () {
+                        setState(() {
+                          _selectedColorMode = DrawingColorMode.purple;
+                        });
+                      },
+                    ),
+                  ),
                 ),
               ],
             ),
@@ -120,7 +184,10 @@ class _TracingScreenState extends State<TracingScreen> {
   void _startStroke(Offset position) {
     setState(() {
       // Create a new Stroke with the current color mode
-      _activeStroke = Stroke(points: [position], colorMode: _selectedColorMode);
+      _activeStroke = Stroke(
+        points: [position],
+        colorMode: _selectedColorMode,
+      );
     });
   }
 
@@ -183,11 +250,8 @@ class _TracingPainter extends CustomPainter {
         case DrawingColorMode.pink:
           linePaint.color = Colors.pink;
           break;
-        case DrawingColorMode.purple:
-          linePaint.color = Colors.purple;
-          break;
         case DrawingColorMode.rainbow:
-          // We can cycle through rainbow colors for each segment
+          // Cycle through rainbow colors for each segment
           final rainbowColors = [
             Colors.red,
             Colors.orange,
@@ -199,6 +263,9 @@ class _TracingPainter extends CustomPainter {
           ];
           final colorIndex = i % rainbowColors.length;
           linePaint.color = rainbowColors[colorIndex];
+          break;
+        case DrawingColorMode.purple:
+          linePaint.color = Colors.purple;
           break;
       }
       canvas.drawLine(p1, p2, linePaint);
@@ -220,7 +287,7 @@ class RainbowIconButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Use InkWell for tap highlights or a GestureDetector if you prefer.
+    // Use InkWell or GestureDetector here
     return GestureDetector(
       onTap: onTap,
       child: CustomPaint(
@@ -246,7 +313,7 @@ class _RainbowCirclePainter extends CustomPainter {
         Colors.blue,
         Colors.indigo,
         Colors.purple,
-        Colors.red, // to complete the cycle
+        Colors.red, // loop back to red at the end
       ],
       startAngle: 0.0,
       endAngle: 2 * 3.141592653589793, // 2*pi
