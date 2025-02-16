@@ -1,19 +1,12 @@
+// FILE: /lib/screens/shape_selection_screen.dart
+
 import 'package:flutter/material.dart';
-import 'package:learn_and_play/screens/shape_tracing_screen.dart';
+import 'package:learn_and_play/screens/one_dimensional_shapes_screen.dart';
+import 'package:learn_and_play/screens/two_dimensional_shapes_screen.dart';
+import 'package:learn_and_play/screens/three_dimensional_shapes_screen.dart';
 
 class ShapeSelectionScreen extends StatelessWidget {
   const ShapeSelectionScreen({Key? key}) : super(key: key);
-
-  // We'll define some example shapes: 1D line, 2D circle/square/triangle, 3D cube/sphere
-  static const List<String> shapes = [
-    'Line (1D)',
-    'Circle (2D)',
-    'Square (2D)',
-    'Triangle (2D)',
-    'Cube (3D)',
-    'Sphere (3D)',
-    'Cylinder (3D)',
-  ];
 
   @override
   Widget build(BuildContext context) {
@@ -22,25 +15,50 @@ class ShapeSelectionScreen extends StatelessWidget {
         title: const Text('Shapes'),
       ),
       body: Center(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(16),
-          child: Wrap(
-            spacing: 10,
-            runSpacing: 10,
-            children: shapes.map((shape) {
-              return ElevatedButton(
-                onPressed: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => ShapeTracingScreen(shape: shape),
-                    ),
-                  );
-                },
-                child: Text(shape),
-              );
-            }).toList(),
-          ),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            // 1) 1D Shapes
+            ElevatedButton(
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => const OneDimensionalShapesScreen(),
+                  ),
+                );
+              },
+              child: const Text('1D Shapes'),
+            ),
+            const SizedBox(height: 20),
+
+            // 2) 2D Shapes
+            ElevatedButton(
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => const TwoDimensionalShapesScreen(),
+                  ),
+                );
+              },
+              child: const Text('2D Shapes'),
+            ),
+            const SizedBox(height: 20),
+
+            // 3) 3D Shapes
+            ElevatedButton(
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => const ThreeDimensionalShapesScreen(),
+                  ),
+                );
+              },
+              child: const Text('3D Shapes'),
+            ),
+          ],
         ),
       ),
     );
